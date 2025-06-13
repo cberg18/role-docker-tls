@@ -4,7 +4,7 @@
   ansible.builtin.command: openssl genrsa -out {{ dds_temp_path }}/server-key.pem 4096
 
 - name: Create the server CSR
-  ansible.builtin.command: "openssl req -subj '/CN={{ dds_host }}' -sha256 -new -key {{ dds_temp_path }}/server-key.pem -out {{ dds_temp_path }}/server.csr"
+  ansible.builtin.command: "openssl req -subj '/CN={{ dds_common_name }}' -sha256 -new -key {{ dds_temp_path }}/server-key.pem -out {{ dds_temp_path }}/server.csr"
 
 - name: Remove extfile
   ansible.builtin.file:
