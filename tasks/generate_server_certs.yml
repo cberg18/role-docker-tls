@@ -1,0 +1,49 @@
+# generate_server_certs.yml
+
+- name: Create server key
+  ansible.builtin.command: openssl genrsa -out {{ dds_temp_path }}/server-key.pem 4096
+
+- name: Create the server CSR
+  ansible.builtin.command: "openssl req -subj '/CN={{ dds_host }}' -sha256 -new -key {{ dds_temp_path }}/server-key.pem -out {{ dds_temp_path }}/server.csr"
+
+- name: Remove extfile
+  ansible.builtin.file:
+    state: absent
+    path: "{{ dds_extfile }}"
+
+- name: Create extfile
+  ansible.builtin.file:
+    state: touch
+    path: "{{ dds_extfile }}"
+
+- name: Add alt name to extfile
+  ansible.builtin.lineinfile:
+    dest: "{{ dds_extfile }}"
+    line: "subjectAltName = IP:{{ dds_host }},IP:127.0.0.1"
+
+- name: Create the server certificate
+  ansible.builtin.command: "openssl x509 -req -days 365 -sha256 -in {{ dds_temp_path }}/server.csr -CA {{ dds_temp_path }}/ca.pem -CAkey {{ dds_temp_path }}/ca-key.pem -CAcreateserial -out {{ dds_temp_path}}/server-cert.pem -extfile {{ dds_temp_path}}/extfile.cnf -passin file:{{ dds_passphrase_file }}"
+
+- name: Check that the server cert path exists
+  ansible.builtin.file:
+    state: directory
+    path: "{{ dds_server_cert_path }}"
+  become: true
+
+- name: Copy server certs
+  ansible.builtin.command: cp "{{ dds_temp_path }}/{{ item }}" "{{ dds_server_cert_path }}/{{ item }}"
+  with_items:
+    - ca.pem
+    - server-cert.pem
+    - server-key.pem
+  become: true
+
+- name: Set file permissions
+  ansible.builtin.file:
+    path: "{{ dds_server_cert_path }}/{{ item }}"
+    mode: 0400
+  with_items:
+    - ca.pem
+    - server-cert.pem
+    - server-key.pem
+  become: true

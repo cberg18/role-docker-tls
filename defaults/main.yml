@@ -1,0 +1,14 @@
+---
+dds_system_tmp: /tmp
+dds_country: US
+dds_state: CO
+dds_locality: Denver
+dds_organization: Acme Corp
+dds_host: "{{ ansible_facts.default_ipv4.address }}"
+dds_port: 2376
+dds_common_name: "{{ ansible_hostname }}"
+dds_passphrase: Phrase123!
+dds_server_cert_path: /etc/docker/ssl
+dds_client_cert_path: "{{ ansible_facts.user_dir }}/.docker"
+dds_env_shell_path: "~"
+dds_configure_docker: false
