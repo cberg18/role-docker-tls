@@ -1,0 +1,22 @@
+---
+# generate_ca.yml
+- name: Remove passphrase file, if it exists
+  ansible.builtin.file:
+    state: absent
+    path: "{{ dds_passphrase_file }}"
+
+- name: Create passphrase file
+  ansible.builtin.file:
+    state: touch
+    path: "{{ dds_passphrase_file }}"
+
+- name: Add passphrase to the file
+  ansible.builtin.lineinfile:
+    dest: "{{ dds_passphrase_file }}"
+    line: "{{ dds_passphrase }}"
+
+- name: Generate ca-key.pem
+  ansible.builtin.command: "openssl genrsa -aes256 -passout file:{{ dds_passphrase_file }} -out {{ dds_temp_path }}/ca-key.pem 4096"
+
+- name: Generate ca certificate
+  ansible.builtin.command: "openssl req -new -x509 -days 365 -key {{ dds_temp_path }}/ca-key.pem -sha256 -out {{ dds_temp_path }}/ca.pem -passin file:{{ dds_passphrase_file }} -subj '/C={{ dds_country }}/ST={{ dds_state }}/L={{ dds_locality }}/O={{ dds_organization }}/CN={{ dds_common_name }}'"

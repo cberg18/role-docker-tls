@@ -1,0 +1,16 @@
+---
+# detect_existing_certs.yml
+- name: Check if CA certificate exists
+  ansible.builtin.stat:
+    path: "{{dds_server_cert_path}}/ca.pem"
+  register: ca_cert_stats
+
+- name: Check if server certificate exists
+  ansible.builtin.stat:
+    path: "{{dds_server_cert_path}}/server-cert.pem"
+  register: server_cert_stats
+
+- name: Check if server key exists
+  ansible.builtin.stat:
+    path: "{{dds_client_cert_path}}/cert.pem"
+  register: client_cert_stats
