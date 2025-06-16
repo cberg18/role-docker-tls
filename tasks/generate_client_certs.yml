@@ -1,5 +1,5 @@
+---
 # generate_client_certs.yml
-
 - name: Create client key
   ansible.builtin.command: "openssl genrsa -out {{ dds_temp_path }}/key.pem 4096"
 

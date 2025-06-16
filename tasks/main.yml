@@ -1,54 +1,37 @@
 ---
 # main.yml
 
-- name: Remove tempdir
-  file:
-    state: absent
-    path: "{{ dds_temp_path }}"
+- block:
+  - name: Remove tempdir
+    ansible.builtin.file:
+      state: absent
+      path: "{{ dds_temp_path }}"
 
-- name: Create a tempdir
-  file:
-    state: directory
-    path: "{{ dds_temp_path }}"
+  - name: Create a tempdir
+    ansible.builtin.file:
+      state: directory
+      path: "{{ dds_temp_path }}"
 
-- name: Remove passphrase file, if it exists
-  file:
-    state: absent
-    path: "{{ dds_passphrase_file }}"
+- name: Check for existing certificates
+  ansible.builtin.include_tasks: detect_existing_certs.yml
 
-- name: Create passphrase file
-  file:
-    state: touch
-    path: "{{ dds_passphrase_file }}"
-
-- name: Add passphrase to the file
-  lineinfile:
-    dest: "{{ dds_passphrase_file }}"
-    line: "{{ dds_passphrase }}"
-
-- name: Generate ca-key.pem
-  command: "openssl genrsa -aes256 -passout file:{{ dds_passphrase_file }} -out {{ dds_temp_path }}/ca-key.pem 4096"
-
-- name: Generate ca certificate
-  command: "openssl req -new -x509 -days 365 -key {{ dds_temp_path }}/ca-key.pem -sha256 -out {{ dds_temp_path }}/ca.pem -passin file:{{ dds_passphrase_file }} -subj '/C={{ dds_country }}/ST={{ dds_state }}/L={{ dds_locality }}/O={{ dds_organization }}/CN={{ dds_common_name }}'"
+- name: Generate CA Key and Certificate
+  ansible.builtin.include_tasks: generate_ca.yml
+  when: ca_cert_stats.stat.exists == false or dds_reissue_certs == true
 
 - name: Generate Server Certs
-  include_tasks: generate_server_certs.yml
+  ansible.builtin.include_tasks: generate_server_certs.yml
+  when: server_cert_stats.stat.exists == false or dds_reissue_certs == true
 
 - name: Generate Client Certs
-  include_tasks: generate_client_certs.yml
+  ansible.builtin.include_tasks: generate_client_certs.yml
+  when: client_cert_stats.stat.exists == false or dds_reissue_certs == true
 
 - name: Configure Docker
-  include_tasks: configure_docker_service.yml
+  ansible.builtin.include_tasks: configure_docker_service.yml
   when: dds_configure_docker
 
 - name: Remove the temp directory
-  file:
+  ansible.builtin.file:
     state: absent
     path: "{{ dds_temp_path }}"
-
-- name: Restart Docker Service
-  ansible.builtin.systemd_service:
-    name: docker
-    state: restarted
-  become: true

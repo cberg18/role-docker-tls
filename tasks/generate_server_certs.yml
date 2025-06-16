@@ -1,5 +1,5 @@
+---
 # generate_server_certs.yml
-
 - name: Create server key
   ansible.builtin.command: openssl genrsa -out {{ dds_temp_path }}/server-key.pem 4096
 
@@ -16,10 +16,17 @@
     state: touch
     path: "{{ dds_extfile }}"
 
-- name: Add alt name to extfile
+- name: Add alt name without dns to extfile
   ansible.builtin.lineinfile:
     dest: "{{ dds_extfile }}"
-    line: "subjectAltName = IP:{{ dds_host }},IP:127.0.0.1"
+    line: "subjectAltName = DNS:{{ dds_common_name }}.{{ dds_domain }},IP:{{ dds_host }},IP:127.0.0.1"
+  when: dds_domain == "example.com"
+
+- name: Add alt name with dns to extfile
+  ansible.builtin.lineinfile:
+    dest: "{{ dds_extfile }}"
+    line: "subjectAltName = DNS:{{ dds_common_name }}.{{ dds_domain }},IP:{{ dds_host }},IP:127.0.0.1"
+  when: dds_domain != "example.com"
 
 - name: Create the server certificate
   ansible.builtin.command: "openssl x509 -req -days 365 -sha256 -in {{ dds_temp_path }}/server.csr -CA {{ dds_temp_path }}/ca.pem -CAkey {{ dds_temp_path }}/ca-key.pem -CAcreateserial -out {{ dds_temp_path}}/server-cert.pem -extfile {{ dds_temp_path}}/extfile.cnf -passin file:{{ dds_passphrase_file }}"
